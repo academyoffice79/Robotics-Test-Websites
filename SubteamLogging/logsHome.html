@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robotics Team Log Calendar</title>
+    <link rel="stylesheet" href="logsHome.css">
+</head>
+
+<body>
+    <header class="topbar">
+        <h1>Robotics Team — Logs Calendar</h1>
+        <nav>
+            <a href="login.html" class="btn small">Login</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="calendar-controls">
+            <button id="prevMonth" class="btn">‹</button>
+            <div id="monthYear" class="month-year"></div>
+            <button id="nextMonth" class="btn">›</button>
+
+            <select id="calendarSource" title="Calendar source">
+                <option value="local">Local (team logs)</option>
+                <option value="google">Google Calendar (optional)</option>
+            </select>
+        </section>
+
+        <section id="calendarWrapper">
+            <div class="weekday-row">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+            <div id="calendar" class="calendar-grid"></div>
+        </section>
+    </main>
+
+    <!-- Modal for logs -->
+    <div id="logModal" class="modal hidden" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true">
+            <button id="closeModal" class="close" aria-label="Close">×</button>
+            <h2 id="modalDate"></h2>
+
+            <label for="subteamSelect">Subteam</label>
+            <select id="subteamSelect"></select>
+
+            <div id="logText" class="log-text" aria-live="polite"></div>
+
+            <div class="modal-actions">
+                <button id="addLogBtn" class="btn primary">Add / Edit Log (requires login)</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="logsHome.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,165 @@
+:root {
+    --max-width: 1000px;
+    --card-radius: 10px;
+    --muted: #888;
+    --bg: #f8fafb;
+    --accent: #1266f1;
+}
+
+* {
+    box-sizing: border-box
+}
+
+body {
+    font-family: Inter, system-ui, Arial, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.topbar {
+    width: 100%;
+    max-width: var(--max-width);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.container {
+    width: 100%;
+    max-width: var(--max-width);
+}
+
+.btn {
+    background: white;
+    border: 1px solid #d0d7de;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn.small {
+    padding: 6px 8px;
+    font-size: 0.9rem
+}
+
+.btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: transparent;
+}
+
+.calendar-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.month-year {
+    min-width: 200px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    background: transparent;
+}
+
+.weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.calendar-cell {
+    background: white;
+    padding: 12px;
+    border-radius: var(--card-radius);
+    min-height: 80px;
+    border: 1px solid #e6e9ee;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-cell .day-num {
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.calendar-cell .event-dot {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: auto;
+    align-self: flex-start;
+}
+
+.calendar-cell.inactive {
+    opacity: 0.4;
+    background: #fafafa;
+}
+
+.log-text {
+    background: #fbfcfe;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #eef2ff;
+    min-height: 120px;
+    margin-top: 10px;
+    white-space: pre-wrap;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 20px;
+    z-index: 9999;
+}
+
+.hidden {
+    display: none
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 540px;
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    font-size: 22px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 10px;
+}

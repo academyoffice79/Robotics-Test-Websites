@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Robotics Team — Login</title>
+    <link rel="stylesheet" href="login.css" />
+</head>
+
+<body>
+    <main class="login-container">
+        <form id="loginForm" class="login-card" autocomplete="off">
+            <h1>Team Login</h1>
+
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" required autocomplete="username" />
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required autocomplete="current-password" />
+
+            <div class="actions">
+                <button type="submit" class="btn primary">Sign in</button>
+                <a href="logsHome.html" class="btn">Back</a>
+            </div>
+
+            <div id="loginMessage" class="muted"></div>
+
+        </form>
+    </main>
+
+    <script src="login.js" defer></script>
+</body>
+
+</html>
