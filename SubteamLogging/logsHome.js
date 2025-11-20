@@ -205,11 +205,11 @@ addLogBtn.addEventListener('click', async () => {
             window.location.href = `/createLog.html?date=${encodeURIComponent(modalDateEl.textContent)}`;
         } else {
             // not logged in -> redirect to login
-            window.location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
+            window.location.href = `login.html?next=${encodeURIComponent(location.pathname)}`;
         }
     } catch (err) {
         console.error(err);
-        window.location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
+        window.location.href = `login.html?next=${encodeURIComponent(location.pathname)}`;
     }
 });
 
