@@ -1,52 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robotics Team Log Calendar</title>
-    <link rel="stylesheet" href="logsHome.css">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Robotics Team — Logs Calendar</title>
+    <link rel="stylesheet" href="logsHome.css" />
 </head>
 
 <body>
     <header class="topbar">
-        <h1>Robotics Team — Logs Calendar</h1>
+        <h1>Robotics Team — Logs</h1>
         <nav>
-            <a href="login.html" class="btn small">Login</a>
+            <button id="loginBtn" class="btn small">Login</button>
+            <button id="logoutBtn" class="btn small hidden">Logout</button>
         </nav>
     </header>
 
     <main class="container">
-        <section class="calendar-controls">
-            <button id="prevMonth" class="btn">‹</button>
-            <div id="monthYear" class="month-year"></div>
-            <button id="nextMonth" class="btn">›</button>
-
-            <select id="calendarSource" title="Calendar source">
-                <option value="local">Local (team logs)</option>
-                <option value="google">Google Calendar (optional)</option>
-            </select>
+        <section class="controls">
+            <div class="nav-row">
+                <button id="prevYear" class="btn">«</button>
+                <button id="prevMonth" class="btn">‹</button>
+                <div id="monthYear" class="month-year" aria-live="polite"></div>
+                <button id="nextMonth" class="btn">›</button>
+                <button id="nextYear" class="btn">»</button>
+            </div>
+            <div class="options-row">
+                <label for="calendarSource">Source:</label>
+                <select id="calendarSource">
+                    <option value="local">Team Logs (backend)</option>
+                    <option value="google">Google Calendar (via server proxy)</option>
+                </select>
+            </div>
         </section>
 
-        <section id="calendarWrapper">
-            <div class="weekday-row">
-                <div>Sun</div>
-                <div>Mon</div>
-                <div>Tue</div>
-                <div>Wed</div>
-                <div>Thu</div>
-                <div>Fri</div>
-                <div>Sat</div>
-            </div>
-            <div id="calendar" class="calendar-grid"></div>
+        <section class="calendar-section">
+            <div class="weekday-row" id="weekdayRow"></div>
+            <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Month calendar"></div>
         </section>
     </main>
 
-    <!-- Modal for logs -->
-    <div id="logModal" class="modal hidden" aria-hidden="true">
-        <div class="modal-content" role="dialog" aria-modal="true">
+    <!-- Modal -->
+    <div id="logModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-content">
             <button id="closeModal" class="close" aria-label="Close">×</button>
-            <h2 id="modalDate"></h2>
+            <h2 id="modalDate">Date</h2>
 
             <label for="subteamSelect">Subteam</label>
             <select id="subteamSelect"></select>
@@ -54,14 +53,12 @@
             <div id="logText" class="log-text" aria-live="polite"></div>
 
             <div class="modal-actions">
-                <button id="addLogBtn" class="btn primary">Add / Edit Log (requires login)</button>
+                <button id="addLogBtn" class="btn primary">Add / Edit Log</button>
             </div>
         </div>
     </div>
 
-
-
-    <script src="logsHome.js"></script>
+    <script src="logsHome.js" defer></script>
 </body>
 
 </html>

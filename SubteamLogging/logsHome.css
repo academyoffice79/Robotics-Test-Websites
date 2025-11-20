@@ -1,9 +1,8 @@
 :root {
     --max-width: 1000px;
-    --card-radius: 10px;
-    --muted: #888;
-    --bg: #f8fafb;
     --accent: #1266f1;
+    --muted: #6b7280;
+    --bg: #f6f8fb;
 }
 
 * {
@@ -18,7 +17,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
+    padding: 18px;
 }
 
 .topbar {
@@ -27,7 +26,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
 }
 
 .container {
@@ -36,10 +35,10 @@ body {
 }
 
 .btn {
-    background: white;
-    border: 1px solid #d0d7de;
-    padding: 8px 12px;
+    padding: 8px 10px;
     border-radius: 8px;
+    border: 1px solid #d0d7de;
+    background: white;
     cursor: pointer;
 }
 
@@ -51,78 +50,84 @@ body {
 .btn.primary {
     background: var(--accent);
     color: white;
-    border-color: transparent;
+    border-color: transparent
 }
 
-.calendar-controls {
+.controls {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    gap: 12px
+}
+
+.nav-row {
+    display: flex;
+    gap: 8px;
+    align-items: center
 }
 
 .month-year {
-    min-width: 200px;
+    min-width: 210px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700
 }
 
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
+.options-row {
+    display: flex;
     gap: 8px;
-    background: transparent;
+    align-items: center
 }
 
+/* Weekday header */
 .weekday-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 8px;
     margin-bottom: 8px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--muted)
+}
+
+/* Calendar grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px
 }
 
 .calendar-cell {
     background: white;
-    padding: 12px;
-    border-radius: var(--card-radius);
+    padding: 10px;
+    border-radius: 10px;
     min-height: 80px;
     border: 1px solid #e6e9ee;
-    position: relative;
-    cursor: pointer;
     display: flex;
     flex-direction: column;
-}
-
-.calendar-cell .day-num {
-    font-weight: 600;
-    margin-bottom: 6px;
-}
-
-.calendar-cell .event-dot {
-    display: block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    margin-top: auto;
-    align-self: flex-start;
+    cursor: pointer;
+    position: relative;
 }
 
 .calendar-cell.inactive {
     opacity: 0.4;
-    background: #fafafa;
+    background: #fbfdff
 }
 
-.log-text {
-    background: #fbfcfe;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #eef2ff;
-    min-height: 120px;
-    margin-top: 10px;
-    white-space: pre-wrap;
+.calendar-cell .day-num {
+    font-weight: 700;
+    margin-bottom: 8px
 }
 
+.calendar-cell .event-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: auto
+}
+
+/* Modal */
 .modal {
     position: fixed;
     inset: 0;
@@ -130,8 +135,8 @@ body {
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.45);
-    padding: 20px;
-    z-index: 9999;
+    padding: 18px;
+    z-index: 1000
 }
 
 .hidden {
@@ -140,26 +145,48 @@ body {
 
 .modal-content {
     width: 100%;
-    max-width: 540px;
+    max-width: 560px;
     background: white;
     padding: 18px;
     border-radius: 12px;
-    position: relative;
+    position: relative
 }
 
 .close {
     position: absolute;
-    right: 12px;
-    top: 8px;
-    font-size: 22px;
-    border: none;
+    right: 14px;
+    top: 10px;
     background: transparent;
-    cursor: pointer;
+    border: none;
+    font-size: 22px;
+    cursor: pointer
+}
+
+.log-text {
+    background: #fbfcfe;
+    border: 1px solid #eef2ff;
+    padding: 10px;
+    border-radius: 8px;
+    min-height: 120px;
+    margin-top: 10px;
+    white-space: pre-wrap
 }
 
 .modal-actions {
     display: flex;
-    gap: 8px;
     justify-content: flex-end;
-    margin-top: 10px;
+    margin-top: 12px;
+    gap: 8px
+}
+
+/* responsive */
+@media (max-width:640px) {
+    .month-year {
+        min-width: unset
+    }
+
+    .calendar-cell {
+        min-height: 68px;
+        padding: 8px
+    }
 }

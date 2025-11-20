@@ -1,152 +1,164 @@
-/**
- * script.js
- * - Builds a navigable calendar (month/year)
- * - Hooks into a pluggable "fetchEventsForRange" function that can retrieve events from:
- *    - your backend (recommended) OR
- *    - Google Calendar API (public calendar via API key or OAuth for private)
- *
- * This file intentionally does not implement server auth or database writes;
- * the "add/edit" button is a hook that should POST to your authenticated backend.
- */
+// logsHome.js — fully functional calendar with month/year navigation, event hooks and modal.
+// Expected server endpoints (examples):
+// GET  /api/logs?start=YYYY-MM-DD&end=YYYY-MM-DD   -> returns [{ date, title, subteam, body }]
+// GET  /api/me                                      -> returns { username } if logged in (200) or 401 if not
+// POST /api/login                                   -> { username, password } (server sets HttpOnly cookie)
+// POST /api/logout
 
-/* -----------------------
-   Utility & state
-   ----------------------- */
-const calendarEl = document.getElementById('calendar');
+// -------------------- State & DOM --------------------
+const calendarGrid = document.getElementById('calendarGrid');
 const monthYearEl = document.getElementById('monthYear');
-const prevBtn = document.getElementById('prevMonth');
-const nextBtn = document.getElementById('nextMonth');
-const calendarSourceSel = document.getElementById('calendarSource');
+const prevMonthBtn = document.getElementById('prevMonth');
+const nextMonthBtn = document.getElementById('nextMonth');
+const prevYearBtn = document.getElementById('prevYear');
+const nextYearBtn = document.getElementById('nextYear');
+const weekdayRow = document.getElementById('weekdayRow');
+const calendarSource = document.getElementById('calendarSource');
 
-let viewDate = new Date(); // current view (first day of month will be used)
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// Modal elements
+const modal = document.getElementById('logModal');
+const closeModalBtn = document.getElementById('closeModal');
+const modalDateEl = document.getElementById('modalDate');
+const subteamSelect = document.getElementById('subteamSelect');
+const logText = document.getElementById('logText');
+const addLogBtn = document.getElementById('addLogBtn');
+
+const SUBTEAMS = ['Mechanical', 'Programming', 'Electrical', 'Outreach', 'Business'];
+
+// viewDate: the first day of currently visible month
+let viewDate = new Date();
 viewDate.setDate(1);
 
-let currentEvents = {}; // map dateStr -> [events]
+// cached events for visible range: map date -> [events]
+let currentEvents = {};
 
-/* -----------------------
-   Navigation
-   ----------------------- */
-prevBtn.addEventListener('click', () => {
-    viewDate.setMonth(viewDate.getMonth() - 1);
-    renderCalendar();
-});
-nextBtn.addEventListener('click', () => {
-    viewDate.setMonth(viewDate.getMonth() + 1);
-    renderCalendar();
-});
-calendarSourceSel.addEventListener('change', () => {
-    renderCalendar();
-});
+// -------------------- Utilities --------------------
+function toISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
-/* -----------------------
-   Render calendar grid
-   ----------------------- */
+// -------------------- Render helpers --------------------
+function renderWeekdays() {
+    weekdayRow.innerHTML = '';
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    days.forEach(d => {
+        const el = document.createElement('div');
+        el.textContent = d;
+        weekdayRow.appendChild(el);
+    });
+}
+
 function renderCalendar() {
-    calendarEl.innerHTML = '';
+    calendarGrid.innerHTML = '';
+
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
-    monthYearEl.textContent = viewDate.toLocaleString(undefined, { month: 'long', year: 'numeric' });
 
-    const firstDayOfWeek = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    monthYearEl.textContent = viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
-    // previous month's trailing days (optional)
-    const prevMonthDays = firstDayOfWeek;
-    const prevMonthLastDate = new Date(year, month, 0).getDate();
+    // 42 cell calendar (6 weeks) for stable layout
+    const firstDayOfGrid = new Date(year, month, 1);
+    const shift = firstDayOfGrid.getDay(); // day of week index (0..6)
+    firstDayOfGrid.setDate(firstDayOfGrid.getDate() - shift);
 
-    // Build 6 rows x 7 columns = 42 cells (stable layout)
-    const totalCells = 42;
-    const startDate = new Date(year, month, 1 - prevMonthDays);
+    // compute visible range for fetching events
+    const startISO = toISO(firstDayOfGrid);
+    const endDate = new Date(firstDayOfGrid);
+    endDate.setDate(endDate.getDate() + 42 - 1);
+    const endISO = toISO(endDate);
 
-    // Fetch events for the visible range before rendering (so we can mark days)
-    const startISO = toISODate(startDate);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + totalCells - 1);
-    const endISO = toISODate(endDate);
-
-    // choose source: local or google (hook)
-    const source = calendarSourceSel.value;
-
-    // fetch events then draw
-    fetchEventsForRange(startISO, endISO, source)
+    // fetch events for range, then build cells
+    fetchEventsForRange(startISO, endISO, calendarSource.value)
         .then(events => {
-            // normalize to map dateStr -> [events]
+            // normalize to map
             currentEvents = {};
             events.forEach(ev => {
-                const d = ev.date; // we expect { date: 'YYYY-MM-DD', title: '...' }
-                if (!currentEvents[d]) currentEvents[d] = [];
-                currentEvents[d].push(ev);
+                if (!ev.date) return;
+                if (!currentEvents[ev.date]) currentEvents[ev.date] = [];
+                currentEvents[ev.date].push(ev);
             });
 
-            // render the 42 calendar cells
-            let iter = new Date(startDate);
-            for (let i = 0; i < totalCells; i++) {
+            // build 42 cells
+            const it = new Date(firstDayOfGrid);
+            for (let i = 0; i < 42; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-cell';
-                const dateStr = toISODate(iter);
-                const inMonth = (iter.getMonth() === month);
-
-                if (!inMonth) cell.classList.add('inactive');
 
                 const dayNum = document.createElement('div');
                 dayNum.className = 'day-num';
-                dayNum.textContent = iter.getDate();
+                dayNum.textContent = it.getDate();
                 cell.appendChild(dayNum);
 
-                // show a small dot if there are events/logs
-                if (currentEvents[dateStr] && currentEvents[dateStr].length > 0) {
+                const dateISO = toISO(it);
+                // mark event
+                if (currentEvents[dateISO] && currentEvents[dateISO].length > 0) {
                     const dot = document.createElement('span');
                     dot.className = 'event-dot';
                     cell.appendChild(dot);
                 }
 
-                // click => open modal with logs for that date
-                cell.addEventListener('click', () => openModal(dateStr));
+                // mark inactive (other month)
+                if (it.getMonth() !== month) cell.classList.add('inactive');
 
-                calendarEl.appendChild(cell);
-                iter.setDate(iter.getDate() + 1);
+                // click opens modal
+                cell.addEventListener('click', () => openModalForDate(dateISO));
+
+                calendarGrid.appendChild(cell);
+                it.setDate(it.getDate() + 1);
             }
         })
         .catch(err => {
-            console.error('Failed to load events:', err);
-            // still render empty grid to avoid blank page
-            let iter = new Date(startDate);
-            for (let i = 0; i < totalCells; i++) {
+            console.error('fetchEventsForRange failed', err);
+            // still render empty grid to avoid blank page, using same iteration
+            const it = new Date(firstDayOfGrid);
+            for (let i = 0; i < 42; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-cell';
-                if (iter.getMonth() !== month) cell.classList.add('inactive');
                 const dayNum = document.createElement('div');
                 dayNum.className = 'day-num';
-                dayNum.textContent = iter.getDate();
+                dayNum.textContent = it.getDate();
+                if (it.getMonth() !== month) cell.classList.add('inactive');
                 cell.appendChild(dayNum);
-                cell.addEventListener('click', () => openModal(toISODate(iter)));
-                calendarEl.appendChild(cell);
-                iter.setDate(iter.getDate() + 1);
+                cell.addEventListener('click', () => openModalForDate(toISO(it)));
+                calendarGrid.appendChild(cell);
+                it.setDate(it.getDate() + 1);
             }
         });
 }
 
-/* -----------------------
-   Modal & logs UI
-   ----------------------- */
-const modal = document.getElementById('logModal');
-const closeModalBtn = document.getElementById('closeModal');
-const modalDateEl = document.getElementById('modalDate');
-const subteamSelect = document.getElementById('subteamSelect');
-const logTextEl = document.getElementById('logText');
-const addLogBtn = document.getElementById('addLogBtn');
+// -------------------- Navigation handlers --------------------
+prevMonthBtn.addEventListener('click', () => {
+    viewDate.setMonth(viewDate.getMonth() - 1);
+    renderCalendar();
+});
+nextMonthBtn.addEventListener('click', () => {
+    viewDate.setMonth(viewDate.getMonth() + 1);
+    renderCalendar();
+});
+prevYearBtn.addEventListener('click', () => {
+    viewDate.setFullYear(viewDate.getFullYear() - 1);
+    renderCalendar();
+});
+nextYearBtn.addEventListener('click', () => {
+    viewDate.setFullYear(viewDate.getFullYear() + 1);
+    renderCalendar();
+});
+calendarSource.addEventListener('change', () => renderCalendar());
 
-const SUBTEAMS = ['Mechanical', 'Programming', 'Electrical', 'Outreach', 'Business'];
-
-closeModalBtn.addEventListener('click', closeModal);
-modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
-function openModal(dateStr) {
+// -------------------- Modal logic --------------------
+function openModalForDate(dateISO) {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
-    modalDateEl.textContent = dateStr;
+    modalDateEl.textContent = dateISO;
 
-    // fill subteam dropdown
+    // fill subteams
     subteamSelect.innerHTML = '';
     SUBTEAMS.forEach(s => {
         const opt = document.createElement('option');
@@ -155,102 +167,107 @@ function openModal(dateStr) {
         subteamSelect.appendChild(opt);
     });
 
-    subteamSelect.addEventListener('change', () => updateLogText(dateStr));
-    updateLogText(dateStr);
+    subteamSelect.addEventListener('change', () => updateModalText(dateISO));
+    updateModalText(dateISO);
 }
 
 function closeModal() {
     modal.classList.add('hidden');
     modal.setAttribute('aria-hidden', 'true');
-    logTextEl.textContent = '';
-    // remove change listeners to avoid duplication
+    logText.textContent = '';
+    // remove change listeners by cloning
     const newSel = subteamSelect.cloneNode(true);
     subteamSelect.parentNode.replaceChild(newSel, subteamSelect);
 }
 
-function updateLogText(dateStr) {
-    const team = document.getElementById('subteamSelect').value;
-    // If events were fetched, local logs could be embedded as event descriptions or separate field.
-    // CurrentEvents format: currentEvents['YYYY-MM-DD'] -> [ {title, subteam, body, ...} ]
-    const dayEvents = currentEvents[dateStr] || [];
+closeModalBtn.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-    // prefer subteam-specific logs
-    const filtered = dayEvents.filter(ev => (ev.subteam || '').toLowerCase() === team.toLowerCase());
+// show events for chosen subteam
+function updateModalText(dateISO) {
+    const team = document.getElementById('subteamSelect').value;
+    const list = currentEvents[dateISO] || [];
+    const filtered = list.filter(ev => (ev.subteam || '').toLowerCase() === team.toLowerCase());
     if (filtered.length > 0) {
-        logTextEl.textContent = filtered.map(f => `• ${f.title}\n${f.body || ''}`).join('\n\n');
+        logText.textContent = filtered.map(f => `• ${f.title}\n${f.body || ''}`).join('\n\n');
     } else {
-        logTextEl.textContent = 'No logs for this subteam on this date.';
+        logText.textContent = 'No logs for this subteam on this date.';
     }
 }
 
-// 'Add / Edit Log' button: send user to a create/edit UI (requires authentication on backend)
-addLogBtn.addEventListener('click', () => {
-    // This should POST to your backend /api/logs with session credentials.
-    // Redirect to a create-log page, or open a form modal — just a placeholder:
-    alert('To add or edit logs you must be logged in. Implement server-side auth first (see docs).');
+// open add/edit - requires auth (redirect to new page or show inline editor)
+addLogBtn.addEventListener('click', async () => {
+    // check auth; /api/me returns 200 if logged in
+    try {
+        const r = await fetch('/api/me', { credentials: 'include' });
+        if (r.status === 200) {
+            // open a dedicated page to create/edit (you can implement /createLog.html)
+            window.location.href = `/createLog.html?date=${encodeURIComponent(modalDateEl.textContent)}`;
+        } else {
+            // not logged in -> redirect to login
+            window.location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
+        }
+    } catch (err) {
+        console.error(err);
+        window.location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
+    }
 });
 
-/* -----------------------
-   Date helpers
-   ----------------------- */
-function toISODate(d) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
+// -------------------- Fetch events hook --------------------
+/*
+  fetchEventsForRange(startISO, endISO, source)
 
-/* -----------------------
-   Event-fetching hook
-   - Replace body of fetchEventsForRange with real API calls
-   - Should return Promise<[ {date:'YYYY-MM-DD', title:'', subteam:'', body:''}, ... ]>
-   ----------------------- */
+  - Must return a Promise resolving to an array of events:
+    [{ date: 'YYYY-MM-DD', title: '...', subteam: 'Programming', body: '...' }, ...]
+  - In production, implement a backend endpoint /api/logs which queries the DB for the range.
+  - For Google Calendar, implement a server proxy that returns events normalized to this format.
+*/
 async function fetchEventsForRange(startISO, endISO, source = 'local') {
-    // For local development: return example in-memory events
     if (source === 'local') {
-        // sample mocked logs (production: your backend endpoint e.g. /api/logs?start=...&end=...)
-        const mocked = [
-            { date: '2025-01-10', title: 'Built intake prototype', subteam: 'Mechanical', body: 'Mounted rollers and tested.' },
-            { date: '2025-01-10', title: 'PID tuning', subteam: 'Programming', body: 'Tuned angular PID for smoother turns.' },
-            { date: '2025-01-12', title: 'Battery tests', subteam: 'Electrical', body: 'Cycle tested 3 batteries.' }
-        ];
-        // filter by range
-        return mocked.filter(e => e.date >= startISO && e.date <= endISO);
+        // call backend
+        const res = await fetch(`/api/logs?start=${startISO}&end=${endISO}`, { credentials: 'include' });
+        if (!res.ok) {
+            // return empty array on error
+            return [];
+        }
+        return await res.json();
     }
 
     if (source === 'google') {
-        // Example: fetch from Google Calendar events list endpoint
-        // Implementation notes:
-        // - If the calendar is PUBLIC you can use a simple API key and call:
-        //   GET https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events?timeMin={startISO}T00:00:00Z&timeMax={endISO}T23:59:59Z&key=YOUR_API_KEY
-        // - For private calendars you must perform OAuth2 server-side or via client libraries (see docs).
-        // This function here expects your backend to provide a secure proxy endpoint (recommended).
-        //
-        // Example fetch to backend proxy:
-        try {
-            const res = await fetch(`/api/calendar/google-events?start=${startISO}&end=${endISO}`);
-            if (!res.ok) throw new Error('Network error');
-            const payload = await res.json();
-            // normalize to our event shape; payload should be array of calendar events
-            return (payload.items || payload).map(it => {
-                // pick a date (all-day or start.dateTime)
-                const date = (it.start && (it.start.date || it.start.dateTime)) || '';
-                return {
-                    date: date.split('T')[0],
-                    title: it.summary || '(no title)',
-                    body: it.description || '',
-                    // custom: map to subteam if you encode subteam in description or a specific extendedProperty
-                    subteam: ''
-                };
-            }).filter(e => e.date);
-        } catch (err) {
-            console.error('Error fetching Google Calendar events:', err);
-            return [];
-        }
+        // server proxy for Google Calendar:
+        const res = await fetch(`/api/calendar/google-events?start=${startISO}&end=${endISO}`, { credentials: 'include' });
+        if (!res.ok) return [];
+        const payload = await res.json();
+        // normalize if needed (assume server returns normalized list)
+        return payload;
     }
 
     return [];
 }
 
-/* initialize */
+// -------------------- Auth UI --------------------
+async function refreshAuthState() {
+    try {
+        const r = await fetch('/api/me', { credentials: 'include' });
+        if (r.status === 200) {
+            loginBtn.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+        } else {
+            loginBtn.classList.remove('hidden');
+            logoutBtn.classList.add('hidden');
+        }
+    } catch (err) {
+        loginBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+    }
+}
+loginBtn.addEventListener('click', () => { window.location.href = 'login.html?next=' + encodeURIComponent(location.pathname); });
+logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    refreshAuthState();
+});
+
+// -------------------- Init --------------------
+renderWeekdays();
+refreshAuthState();
 renderCalendar();
